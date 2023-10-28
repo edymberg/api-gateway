@@ -1,0 +1,71 @@
+version: '3'
+services:
+  authdb:
+    image: edymberg/basemongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_DATABASE=${AUTH_DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${AUTH_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${AUTH_PASSWORD}
+      - DB_PORT=${DB_PORT}
+    ports:
+      - ${AUTH_DB_PORT}:${DB_PORT} # host:container
+  authservice:
+    image: edymberg/auth-service:e60967be376595947202b4a6bd79eb578b80b16a
+    platform: "linux/amd64"
+    depends_on:
+      - authdb
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_URL=${AUTH_DB_URL}
+      - PORT=${AUTH_PORT}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+    ports:
+      - ${AUTH_PORT}:${AUTH_PORT}
+    healthcheck:
+      test: curl --connect-timeout 90 --max-time 90 --retry 4 --retry-delay 30 --retry-max-time 90 --retry-connrefused "http://localhost:${AUTH_PORT}/healthcheck" | sh
+      interval: 5s
+      timeout: 30s
+      retries: 6
+  productdb:
+    image: edymberg/basemongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_DATABASE=${PRODUCT_DATABASE}
+      - MONGO_INITDB_ROOT_USERNAME=${PRODUCT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${PRODUCT_PASSWORD}
+      - DB_PORT=${DB_PORT}
+    ports:
+      - ${PRODUCT_DB_PORT}:${DB_PORT} # host:container
+  productservice:
+    image: edymberg/product-service:4fda785733bc58c89d528266728067cb0da18059
+    platform: "linux/amd64"
+    depends_on:
+      - productdb
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - DB_URL=${PRODUCT_DB_URL}
+      - PORT=${PRODUCT_PORT}
+    ports:
+      - ${PRODUCT_PORT}:${PRODUCT_PORT}
+    healthcheck:
+      test: curl --connect-timeout 90 --max-time 90 --retry 4 --retry-delay 30 --retry-max-time 90 --retry-connrefused "http://localhost:${PRODUCT_PORT}/healthcheck" | sh
+      interval: 5s
+      timeout: 30s
+      retries: 6
+  apigateway:
+    # image: edymberg/api-gateway
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - ${API_GATEWAY_PORT}:${API_GATEWAY_PORT}
+    depends_on:
+      - authdb
+      - productdb
+      - productservice
+      - authservice
