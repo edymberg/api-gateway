@@ -12,7 +12,7 @@ services:
       - ${AUTH_DB_PORT}:${DB_PORT} # host:container
   authservice:
     image: edymberg/auth-service:e60967be376595947202b4a6bd79eb578b80b16a
-    platform: "linux/amd64"
+    platform: linux/x86_64
     depends_on:
       - authdb
     environment:
@@ -42,8 +42,8 @@ services:
     ports:
       - ${PRODUCT_DB_PORT}:${DB_PORT} # host:container
   productservice:
-    image: edymberg/product-service:4fda785733bc58c89d528266728067cb0da18059
-    platform: "linux/amd64"
+    image: edymberg/product-service:b282f69421fea567659b9a5de84826b48462edc2
+    platform: linux/x86_64
     depends_on:
       - productdb
     environment:
@@ -58,10 +58,8 @@ services:
       timeout: 30s
       retries: 6
   apigateway:
-    # image: edymberg/api-gateway
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: edymberg/api-gateway:19abb1a5307b4c7cb9e7e13621f7b1408fe4c6fa
+    platform: linux/x86_64
     ports:
       - ${API_GATEWAY_PORT}:${API_GATEWAY_PORT}
     depends_on:
